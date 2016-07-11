@@ -22,6 +22,12 @@ Release History
 2.2.0 (unreleased)
 ==================
 
+**Improvements**
+
+- Added an optimizer to the reference builder that reduces simulation times for
+  model with a large number of small ensembles.
+  (`#1035 <https://github.com/nengo/nengo/pull/1035>`_)
+
 
 
 2.1.2 (June 27, 2016)

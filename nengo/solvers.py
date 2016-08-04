@@ -13,7 +13,6 @@ import time
 import numpy as np
 
 import nengo.utils.least_squares_solvers as lstsq
-from nengo.cache import Fingerprint
 from nengo.exceptions import ValidationError
 from nengo.params import BoolParam, NumberParam, Parameter
 from nengo.utils.compat import range, with_metaclass, iteritems
@@ -502,19 +501,3 @@ class NnlsL2nz(NnlsL2):
         sigma = (self.reg * A.max()) * np.sqrt((A > 0).mean(axis=0))
         sigma[sigma == 0] = 1
         return self._solve(A, Y, rng, E, sigma=sigma)
-
-
-# Code below is specific to the Nengo reference backend
-def check_subsolver(solver):
-    return type(solver.solver) in Fingerprint.WHITELIST
-
-
-def check_subsolvers(solver):
-    return (type(solver.solver1) in Fingerprint.WHITELIST
-            and type(solver.solver2) in Fingerprint.WHITELIST)
-
-for klass in (Lstsq, LstsqL1, Nnls, NnlsL2, NnlsL2nz):
-    Fingerprint.whitelist(klass)
-for klass in (LstsqNoise, LstsqMultNoise, LstsqL2, LstsqL2nz):
-    Fingerprint.whitelist(klass, fn=check_subsolver)
-Fingerprint.whitelist(LstsqDrop, fn=check_subsolvers)

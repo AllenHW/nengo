@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import numpy as np
 
 import nengo.utils.numpy as npext
-from nengo.cache import Fingerprint
 from nengo.exceptions import ValidationError
 from nengo.params import Parameter
 
@@ -284,10 +283,3 @@ class LeastSquaresSolverParam(Parameter):
                 "(see ``nengo.solvers.lstsq`` for options)" % solver,
                 attr=self.name, obj=instance)
         super(LeastSquaresSolverParam, self).validate(instance, solver)
-
-
-# Code below is specific to the Nengo reference backend
-fingerprintable = (Cholesky, ConjgradScipy, LSMRScipy, Conjgrad, BlockConjgrad,
-                   SVD, RandomizedSVD)
-for klass in fingerprintable:
-    Fingerprint.whitelist(klass)

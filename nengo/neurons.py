@@ -4,7 +4,6 @@ import logging
 
 import numpy as np
 
-from nengo.cache import Fingerprint
 from nengo.exceptions import SimulationError, ValidationError
 from nengo.params import Parameter, NumberParam, FrozenObject
 from nengo.utils.compat import range
@@ -531,10 +530,3 @@ class NeuronTypeParam(Parameter):
             raise ValidationError("'%s' is not a neuron type" % neurons,
                                   attr=self.name, obj=instance)
         super(NeuronTypeParam, self).validate(instance, neurons)
-
-
-# Code below is specific to the Nengo reference backend
-fingerprintable = (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
-                   LIFRate, RectifiedLinear, Sigmoid)
-for klass in fingerprintable:
-    Fingerprint.whitelist(klass)

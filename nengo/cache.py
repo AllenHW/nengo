@@ -13,10 +13,18 @@ import warnings
 import numpy as np
 
 from nengo.exceptions import FingerprintError, TimeoutError
+from nengo.neurons import (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich,
+                           LIF, LIFRate, RectifiedLinear, Sigmoid)
 from nengo.rc import rc
+from nengo.solvers import (Solver, Lstsq, LstsqL1, Nnls, NnlsL2,
+                           NnlsL2nz, LstsqNoise, LstsqMultNoise, LstsqL2,
+                           LstsqL2nz, LstsqDrop)
 from nengo.utils import nco
 from nengo.utils.cache import byte_align, bytes2human, human2bytes
 from nengo.utils.compat import int_types, is_string, pickle, PY2, string_types
+from nengo.utils.least_squares_solvers import (
+    LeastSquaresSolver, Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
+    BlockConjgrad, SVD, RandomizedSVD)
 from nengo.utils.lock import FileLock
 
 logger = logging.getLogger(__name__)
@@ -58,6 +66,13 @@ def check_dtype(ndarray):
     return ndarray.dtype.isbuiltin == 1 and not ndarray.dtype.hasobject
 
 
+def check_subsolvers(solver):
+    attrs = [getattr(solver, x) for x in dir(solver)]
+    subsolvers = [x for x in attrs if isinstance(x, (Solver,
+                                                     LeastSquaresSolver))]
+    return all([type(x) in Fingerprint.WHITELIST for x in subsolvers])
+
+
 class Fingerprint(object):
     """Fingerprint of an object instance.
 
@@ -92,9 +107,18 @@ class Fingerprint(object):
 
     __slots__ = ('fingerprint',)
 
+    SOLVERS = (Lstsq, LstsqL1, Nnls, NnlsL2, NnlsL2nz, LstsqNoise,
+               LstsqMultNoise, LstsqL2, LstsqL2nz, LstsqDrop)
+    LSTSQ_METHODS = (Cholesky, ConjgradScipy, LSMRScipy, Conjgrad,
+                     BlockConjgrad, SVD, RandomizedSVD)
+    NEURON_TYPES = (AdaptiveLIF, AdaptiveLIFRate, Direct, Izhikevich, LIF,
+                    LIFRate, RectifiedLinear, Sigmoid)
+
     WHITELIST = set(
-        (bool, float, complex, bytes, np.ndarray) + int_types + string_types)
-    CHECKS = {np.ndarray: check_dtype}
+        (bool, float, complex, bytes, np.ndarray) + int_types + string_types +
+        SOLVERS + LSTSQ_METHODS + NEURON_TYPES)
+    CHECKS = dict([(np.ndarray, check_dtype)] +
+                  [(x, check_subsolvers) for x in SOLVERS])
 
     def __init__(self, obj):
         typ = type(obj)
@@ -387,6 +411,7 @@ class DecoderCache(object):
         func
             Wrapped decoder solver.
         """
+
         def cached_solver(solver, neuron_type, gain, bias, x, targets,
                           rng=None, E=None):
             try:
@@ -427,6 +452,7 @@ class DecoderCache(object):
             else:
                 logger.debug("Cache hit [%s]: Loaded stored decoders.", key)
             return decoders, solver_info
+
         return cached_solver
 
     def _get_cache_key(
